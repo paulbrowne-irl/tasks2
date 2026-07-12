@@ -1,3 +1,5 @@
+"""Environment-backed application configuration."""
+
 from __future__ import annotations
 
 import os
@@ -10,6 +12,7 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
+    # Holds deployment, authentication, and Google Sheets configuration values.
     flask_secret_key: str
     spreadsheet_id: str
     sheet_name: str = "Tasks"
@@ -27,6 +30,7 @@ class Settings:
 
 
 def load_settings() -> Settings:
+    # Load environment variables and reject missing values required to run safely.
     secret = os.getenv("FLASK_SECRET_KEY")
     spreadsheet_id = os.getenv("TASKS_SPREADSHEET_ID")
     if not secret:

@@ -1,3 +1,5 @@
+"""Tests for environment-backed application configuration."""
+
 import os
 
 import pytest
@@ -6,6 +8,7 @@ from config import Settings, load_settings
 
 
 def test_load_settings_reads_required_environment(monkeypatch):
+    # Required environment values should populate the typed settings object.
     monkeypatch.setenv("FLASK_SECRET_KEY", "test-secret")
     monkeypatch.setenv("TASKS_SPREADSHEET_ID", "sheet-123")
     monkeypatch.setenv("TASKS_SHEET_NAME", "Tasks")
@@ -19,6 +22,7 @@ def test_load_settings_reads_required_environment(monkeypatch):
 
 
 def test_load_settings_rejects_missing_secret(monkeypatch):
+    # Production configuration must not run without a Flask session secret.
     monkeypatch.delenv("FLASK_SECRET_KEY", raising=False)
     monkeypatch.setenv("TASKS_SPREADSHEET_ID", "sheet-123")
 

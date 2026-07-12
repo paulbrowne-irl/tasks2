@@ -1,3 +1,5 @@
+"""Tests for the rendered task page and responsive stylesheet."""
+
 from dataclasses import dataclass
 from unittest.mock import Mock
 
@@ -13,6 +15,7 @@ class FakeSettings:
 
 
 def test_task_page_has_accessible_responsive_controls():
+    # The page must expose labelled, keyboard-usable task controls.
     auth = Mock()
     auth.authenticate_header.return_value = Identity("user-1", "user@example.com")
     app = create_app(FakeSettings(), auth, Mock())
@@ -30,6 +33,7 @@ def test_task_page_has_accessible_responsive_controls():
 
 
 def test_static_styles_include_mobile_breakpoint():
+    # The stylesheet must include a narrow-screen layout breakpoint.
     auth = Mock()
     auth.authenticate_header.return_value = Identity("user-1")
     app = create_app(FakeSettings(), auth, Mock())

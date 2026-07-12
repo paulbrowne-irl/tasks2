@@ -1,3 +1,5 @@
+"""Google Sheets operations for task storage and task-sheet organisation."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -5,13 +7,16 @@ from typing import Any
 
 
 class SheetsServiceError(RuntimeError):
+    # Represents a user-facing failure while communicating with Google Sheets.
     """Raised when a Google Sheets operation fails."""
 
 
 class SheetsService:
+    # Encapsulates all reads and writes for the configured task worksheet.
     HEADERS = ("Category", "Task", "Colour", "T Date", "Hash")
 
     def __init__(self, api: Any, spreadsheet_id: str, sheet_name: str = "Tasks", sheet_id: int = 0) -> None:
+        # Store the API client and worksheet identifiers used by every operation.
         self.api = api
         self.spreadsheet_id = spreadsheet_id
         self.sheet_name = sheet_name
@@ -19,6 +24,7 @@ class SheetsService:
         self._sheet_exists = False
 
     def _ensure_sheet_exists(self) -> None:
+        # Discover or create the configured worksheet and initialise its headers.
         if self._sheet_exists:
             return
         try:
@@ -57,6 +63,7 @@ class SheetsService:
             raise SheetsServiceError("Google Sheets could not ensure task sheet exists") from exc
 
     def list_tasks(self) -> list[dict[str, str]]:
+        # Read task rows and map spreadsheet columns to application fields.
         self._ensure_sheet_exists()
         try:
             response = (
@@ -84,6 +91,7 @@ class SheetsService:
         return tasks
 
     def add_task(self, category: str, task_name: str) -> None:
+        # Validate and append a new task without replacing existing metadata.
         if not category.strip() or not task_name.strip():
             raise ValueError("Category and task name are required")
         self._ensure_sheet_exists()
@@ -99,6 +107,7 @@ class SheetsService:
             raise SheetsServiceError("Google Sheets could not add the task") from exc
 
     def sort_by_colour(self) -> None:
+        # Sort the worksheet rows by the colour column while preserving the header.
         self._ensure_sheet_exists()
         try:
             self.api.spreadsheets().batchUpdate(
@@ -123,5 +132,6 @@ class SheetsService:
             raise SheetsServiceError("Google Sheets could not sort tasks") from exc
 
     def triage_task_sheets(self) -> dict[str, str]:
+        # Return the status for the task-sheet review operation.
         self._ensure_sheet_exists()
         return {"status": "Task sheets reviewed and organised"}

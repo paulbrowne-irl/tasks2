@@ -1,3 +1,5 @@
+"""Unit tests for Google Sheets task storage behavior."""
+
 from unittest.mock import Mock
 
 import pytest
@@ -6,6 +8,7 @@ from sheets_service import SheetsService, SheetsServiceError
 
 
 def make_service(values):
+    # Build a mocked Sheets API with an existing Tasks worksheet.
     api = Mock()
     api.spreadsheets().get().execute.return_value = {
         "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
@@ -15,6 +18,7 @@ def make_service(values):
 
 
 def test_reads_tasks_and_preserves_header_fields():
+    # Spreadsheet columns map to task fields without losing metadata.
     service = make_service(
         [
             ["Category", "Task", "Colour", "T Date", "Hash"],
@@ -32,6 +36,7 @@ def test_reads_tasks_and_preserves_header_fields():
 
 
 def test_add_task_appends_category_and_name():
+    # Adding a task appends values rather than replacing existing rows.
     api = Mock()
     api.spreadsheets().get().execute.return_value = {
         "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
@@ -46,6 +51,7 @@ def test_add_task_appends_category_and_name():
 
 
 def test_sort_by_colour_delegates_to_sheet_sort():
+    # Colour sorting is implemented as a Google Sheets batch update.
     api = Mock()
     api.spreadsheets().get().execute.return_value = {
         "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
@@ -58,6 +64,7 @@ def test_sort_by_colour_delegates_to_sheet_sort():
 
 
 def test_google_api_errors_are_translated():
+    # Low-level API failures become application-level SheetsServiceError values.
     api = Mock()
     api.spreadsheets().get().execute.return_value = {
         "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
@@ -70,6 +77,7 @@ def test_google_api_errors_are_translated():
 
 
 def test_creates_task_sheet_if_missing():
+    # A missing configured worksheet is created and given the required headers.
     api = Mock()
     sheets_api = api.spreadsheets.return_value
     sheets_api.get.return_value.execute.return_value = {"sheets": []}

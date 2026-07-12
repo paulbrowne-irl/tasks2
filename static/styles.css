@@ -1,23 +1,45 @@
+/* Global colour, typography, and page defaults. */
 :root { color-scheme: light; font-family: system-ui, sans-serif; background: #f4f5f7; color: #20242a; }
+/* Use predictable sizing for every element. */
 * { box-sizing: border-box; }
+/* Remove the browser default body margin. */
 body { margin: 0; }
+/* Center the application shell and constrain its reading width. */
 .shell { width: min(960px, calc(100% - 2rem)); margin: 0 auto; padding: 3rem 0; }
+/* Add spacing below the page heading. */
 .hero { margin-bottom: 1.5rem; }
+/* Style the small section label above the page title. */
 .eyebrow { color: #5367d8; font-size: .75rem; font-weight: 700; letter-spacing: .12em; }
+/* Keep headings compact and readable. */
 h1, h2 { line-height: 1.1; }
+/* Present each feature area as a raised panel. */
 .panel { background: white; border: 1px solid #dde1e8; border-radius: 1rem; padding: 1.25rem; margin-top: 1rem; box-shadow: 0 8px 24px #1b255012; }
+/* Arrange task inputs and the submit button in one desktop row. */
 .task-form { display: grid; grid-template-columns: 1fr 1.6fr auto; gap: .75rem; align-items: end; }
+/* Make form labels visually prominent. */
 label { font-weight: 650; }
+/* Standardise text input sizing and borders. */
 input { width: 100%; min-height: 2.7rem; border: 1px solid #bcc3d0; border-radius: .5rem; padding: .6rem; font: inherit; }
+/* Shared visual treatment for all interactive buttons. */
 button { min-height: 2.7rem; border: 0; border-radius: .5rem; padding: .6rem 1rem; background: #5367d8; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+/* Provide visual feedback for pointer and keyboard interaction. */
 button:hover, button:focus-visible { background: #3f51bd; }
+/* Allow action buttons to wrap when the viewport narrows. */
 .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
+/* Reserve space so status updates do not shift the layout. */
 .status { min-height: 1.5rem; }
+/* Stack task rows with consistent spacing. */
 .task-list { display: grid; gap: .5rem; }
+/* Display category, task name, and colour as task columns. */
 .task { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: .75rem; padding: .75rem; border-radius: .5rem; background: #f4f5f7; }
+/* Collapse the layout for mobile devices. */
 @media (max-width: 640px) {
+  /* Reduce page padding on small screens. */
   .shell { padding: 1.5rem 0; }
+  /* Stack task form fields vertically. */
   .task-form { grid-template-columns: 1fr; }
+  /* Stack task values vertically. */
   .task { grid-template-columns: 1fr; }
+  /* Make action buttons easy to tap on narrow screens. */
   button { width: 100%; }
 }

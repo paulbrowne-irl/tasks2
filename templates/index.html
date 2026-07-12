@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Authenticated task-management page. -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -8,12 +9,14 @@
 </head>
 <body>
   <main class="shell">
-    <header class="hero">
+  <!-- Page heading and current authenticated identity. -->
+  <header class="hero">
       <p class="eyebrow">TASK MANAGEMENT</p>
       <h1>Tasks, content and links</h1>
       <p>Signed in as {{ identity.email or identity.uid }}.</p>
     </header>
 
+    <!-- Task creation and organisation controls. -->
     <section class="panel" aria-labelledby="actions-title">
       <h2 id="actions-title">Task actions</h2>
       <form id="task-form" class="task-form">
@@ -31,6 +34,7 @@
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </section>
 
+    <!-- Live task list populated from the Google Sheets API. -->
     <section class="panel" aria-labelledby="tasks-title">
       <h2 id="tasks-title">Tasks</h2>
       <div id="task-list" class="task-list" aria-live="polite">

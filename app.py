@@ -1,3 +1,5 @@
+"""Flask application routes and Google Sheets integration points."""
+
 from __future__ import annotations
 
 import os
@@ -16,6 +18,7 @@ def create_app(
     auth_manager: AuthManager | None = None,
     sheets_service: SheetsService | Any | None = None,
 ) -> Flask:
+    # Build the Flask application, register dependencies, and expose all web routes.
     settings = settings or load_settings()
     app = Flask(__name__)
     app.config["SECRET_KEY"] = settings.flask_secret_key
@@ -24,10 +27,12 @@ def create_app(
     app.extensions["sheets_service"] = sheets_service
 
     def current_identity() -> Identity:
+        # Extract and verify the Firebase bearer token from the current request.
         authorization = request.headers.get("Authorization")
         return app.extensions["auth_manager"].authenticate_header(authorization)
 
     def current_sheets_service(identity: Identity) -> SheetsService | Any:
+        # Select an injected test service or construct a user-authorized Sheets service.
         if app.extensions["sheets_service"] is not None:
             return app.extensions["sheets_service"]
         credentials = app.extensions["auth_manager"].google_credentials_for(identity.uid)
@@ -36,8 +41,10 @@ def create_app(
         return _sheets_service_for_credentials(settings, credentials)
 
     def protected(handler: Callable[..., Any]) -> Callable[..., Any]:
+        # Wrap routes so unauthenticated API requests are rejected consistently.
         @wraps(handler)
         def wrapped(*args: Any, **kwargs: Any) -> Any:
+            # Authenticate the request before invoking the protected route handler.
             try:
                 identity = current_identity()
             except AuthenticationError:
@@ -50,10 +57,12 @@ def create_app(
 
     @app.get("/health")
     def health() -> tuple[str, int]:
+        # Return a lightweight health response for deployment probes.
         return "ok", 200
 
     @app.get("/login")
     def login() -> str:
+        # Render the Firebase Google sign-in page with public Firebase configuration.
         return render_template(
             "login.html",
             firebase_config={
@@ -67,11 +76,13 @@ def create_app(
     @app.get("/")
     @protected
     def index(identity: Identity) -> str:
+        # Render the authenticated task-management interface.
         return render_template("index.html", identity=identity)
 
     @app.get("/api/tasks")
     @protected
     def list_tasks(identity: Identity) -> Any:
+        # Return the current task rows from Google Sheets.
         try:
             return jsonify(tasks=current_sheets_service(identity).list_tasks())
         except SheetsServiceError as exc:
@@ -80,6 +91,7 @@ def create_app(
     @app.post("/api/tasks")
     @protected
     def add_task(identity: Identity) -> Any:
+        # Validate and append a new category/task pair to the spreadsheet.
         payload = request.get_json(silent=True) or {}
         category = str(payload.get("category", ""))
         task_name = str(payload.get("task_name", ""))
@@ -94,6 +106,7 @@ def create_app(
     @app.post("/api/tasks/sort")
     @protected
     def sort_tasks(identity: Identity) -> Any:
+        # Ask the spreadsheet service to sort tasks by colour.
         try:
             current_sheets_service(identity).sort_by_colour()
         except SheetsServiceError as exc:
@@ -103,6 +116,7 @@ def create_app(
     @app.post("/api/task-sheets/triage")
     @protected
     def triage_task_sheets(identity: Identity) -> Any:
+        # Run the task-sheet organisation operation and return its status.
         try:
             result = current_sheets_service(identity).triage_task_sheets()
         except SheetsServiceError as exc:
@@ -113,6 +127,7 @@ def create_app(
 
     @app.get("/auth/google/start")
     def google_start() -> Any:
+        # Start the Google OAuth consent flow after Firebase identity is established.
         uid = session.get("firebase_uid")
         if not uid:
             return jsonify(error="Authenticate with Firebase before granting Sheets access"), 401
@@ -123,12 +138,14 @@ def create_app(
     @app.post("/api/auth/session")
     @protected
     def establish_session(identity: Identity) -> Any:
+        # Bind the verified Firebase identity to the Flask session.
         session["firebase_uid"] = identity.uid
         session["firebase_email"] = identity.email
         return jsonify(message="Identity established", google_authorization=url_for("google_start"))
 
     @app.get("/auth/google/callback")
     def google_callback() -> Any:
+        # Validate the OAuth callback and store the user's Sheets credentials.
         if request.args.get("error"):
             return jsonify(error="Google authorization was not completed"), 400
         uid = session.get("firebase_uid")
@@ -146,6 +163,7 @@ def create_app(
 
 
 def _sheets_service_for_credentials(settings: Settings, credentials: Any) -> SheetsService:
+    # Build the Google Sheets API client using the authenticated user's credentials.
     from googleapiclient.discovery import build
 
     api = build("sheets", "v4", credentials=credentials, cache_discovery=False)
@@ -153,5 +171,6 @@ def _sheets_service_for_credentials(settings: Settings, credentials: Any) -> She
 
 
 if __name__ == "__main__":
+    # Run the Flask development server when this module is executed directly.
     app = create_app()
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8080")))
