@@ -216,3 +216,57 @@ The GUI should have the following features:
 Update all necessary source code to implement the responsive Flask web UI, including the Python project configuration, HTML templates, JavaScript, Readme.md, Firebase deployment configuration, and tests where applicable.
 
 Task operations must preserve the configured spreadsheet structure, including the `Tasks` sheet, category data, `z done` marker, `T Date` field, and supporting task metadata.
+
+Ensure the `readme.md` contains clear instructions for deployment from GitHub to Google Firebase and for running the project for the first time.
+
+If the `Tasks` spreadsheet does not exist, create it in the user's Google Sheets account.
+
+### Spreadsheet Layout
+
+The source material indicates that the workbook "0 - own - tasks" consists of several distinct sheets (tabs), each with a specific column structure. To recreate this using Python (e.g., via the `pandas` library or `gspread`), you would need to define the following tab names and their associated header rows:
+
+#### 1. Tasks
+This sheet follows a 7-column structure designed for primary task management.
+*   **Headers:** `priority`, `context`, `Task`, `mod`, `hash`, `Tmp`, `[Unnamed]`.
+
+#### 2. T Date
+A 5-column sheet likely used for scheduling or chronological planning.
+*   **Headers:** `When`, `Context`, `Task`, `[Unnamed]`, `[Unnamed]`.
+
+#### 3. Triage
+A 5-column sheet used for prioritizing technical tasks.
+*   **Headers:** `Priority`, `Context`, `Tech task`, `edit`, `P 1 =high 3=low`.
+
+#### 4. CList
+A 9-column sheet used for tracking gifts and ideas across multiple years.
+*   **Headers:** `1 Who`, `Next step`, `Idea 2021`, `Idea 2020`, `Idea 2019`, `Item`, `Status`, `Previous`, `Item`.
+
+#### 5. Times
+An 8-column sheet used for logging athletic performance and race results.
+*   **Structure:** While the excerpt shows data in the header row, the columns correspond to: `Year`, `Trial Name`, `Time/Duration`, and five additional columns for notes or split times (e.g., `T1`, `Cycle`, `T2`, `Run`).
+
+#### 6. Age
+This sheet functions as a **pivot table** or summary report rather than a standard list.
+*   **Horizontal Axis (Row 1):** Starts with an empty cell, followed by a `mod` label, then a series of **date strings**, and ends with `T` and `Grand Total`.
+*   **Vertical Axis (Column A):** Contains aggregate labels, specifically `COUNTA of Task`.
+
+#### 7. Informational & Reference Sheets
+Some sheets are less tabular and more oriented toward list-based reference:
+*   **Links:** A two-column reference list for specific URLs (e.g., `Script Tidy`, `Holiday Plan`, `Rory Plan`).
+*   **Ins:** A sheet for insurance policy details with specific row labels in the first column (e.g., `Policy`, `Claim number`, `Agreed location`).
+*   **Savings:** A simple text-entry sheet for financial reminders without a complex column structure.
+*   **z done:** A tab for archived tasks (likely mirroring the `Tasks` sheet structure).
+
+### **Python Structural Representation**
+For recreation in Python, the core tabular sheets can be represented as a dictionary:
+
+```python
+sheet_structure = {
+    "Tasks": ["priority", "context", "Task", "mod", "hash", "Tmp", "Field7"],
+    "T Date": ["When", "Context", "Task", "Field4", "Field5"],
+    "Triage": ["Priority", "Context", "Tech task", "edit", "P 1 =high 3=low"],
+    "CList": ["1 Who", "Next step", "Idea 2021", "Idea 2020", "Idea 2019", "Item", "Status", "Previous", "Item"],
+    "Times": ["Year", "Event", "Time", "Note", "Split1", "Split2", "Split3", "Split4"]
+}
+``` 
+*(Field names like "Field4" or "Split1" are inferred where headers are unnamed or used for data in the source.)*

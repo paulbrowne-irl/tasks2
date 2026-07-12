@@ -3,6 +3,10 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -11,6 +15,7 @@ class Settings:
     sheet_name: str = "Tasks"
     google_client_id: str | None = None
     google_client_secret: str | None = None
+    google_oauth_redirect_uri: str | None = None
     firebase_project_id: str | None = None
     firebase_api_key: str | None = None
     firebase_auth_domain: str | None = None
@@ -35,6 +40,7 @@ def load_settings() -> Settings:
         sheet_name=os.getenv("TASKS_SHEET_NAME", "Tasks"),
         google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
         google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+        google_oauth_redirect_uri=os.getenv("GOOGLE_OAUTH_REDIRECT_URI"),
         firebase_project_id=os.getenv("FIREBASE_PROJECT_ID"),
         firebase_api_key=os.getenv("FIREBASE_API_KEY"),
         firebase_auth_domain=os.getenv("FIREBASE_AUTH_DOMAIN"),

@@ -7,6 +7,9 @@ from sheets_service import SheetsService, SheetsServiceError
 
 def make_service(values):
     api = Mock()
+    api.spreadsheets().get().execute.return_value = {
+        "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
+    }
     api.spreadsheets().values().get().execute.return_value = {"values": values}
     return SheetsService(api, "sheet-1", "Tasks")
 
@@ -30,6 +33,9 @@ def test_reads_tasks_and_preserves_header_fields():
 
 def test_add_task_appends_category_and_name():
     api = Mock()
+    api.spreadsheets().get().execute.return_value = {
+        "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
+    }
     service = SheetsService(api, "sheet-1", "Tasks")
 
     service.add_task("Work", "Call customer")
@@ -41,6 +47,9 @@ def test_add_task_appends_category_and_name():
 
 def test_sort_by_colour_delegates_to_sheet_sort():
     api = Mock()
+    api.spreadsheets().get().execute.return_value = {
+        "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
+    }
     service = SheetsService(api, "sheet-1", "Tasks")
 
     service.sort_by_colour()
@@ -50,8 +59,35 @@ def test_sort_by_colour_delegates_to_sheet_sort():
 
 def test_google_api_errors_are_translated():
     api = Mock()
+    api.spreadsheets().get().execute.return_value = {
+        "sheets": [{"properties": {"title": "Tasks", "sheetId": 0}}]
+    }
     api.spreadsheets().values().get().execute.side_effect = RuntimeError("offline")
     service = SheetsService(api, "sheet-1", "Tasks")
 
     with pytest.raises(SheetsServiceError, match="Google Sheets"):
         service.list_tasks()
+
+
+def test_creates_task_sheet_if_missing():
+    api = Mock()
+    sheets_api = api.spreadsheets.return_value
+    sheets_api.get.return_value.execute.return_value = {"sheets": []}
+    sheets_api.batchUpdate.return_value.execute.return_value = {
+        "replies": [{"addSheet": {"properties": {"sheetId": 123}}}]
+    }
+    sheets_api.values.return_value.update.return_value.execute.return_value = {}
+    sheets_api.values.return_value.get.return_value.execute.return_value = {
+        "values": [["Category", "Task", "Colour", "T Date", "Hash"]]
+    }
+
+    service = SheetsService(api, "sheet-1", "Tasks")
+    result = service.list_tasks()
+
+    assert sheets_api.get.call_args.kwargs == {
+        "spreadsheetId": "sheet-1",
+        "includeGridData": False,
+    }
+    sheets_api.batchUpdate.assert_called_once()
+    sheets_api.values.return_value.update.assert_called_once()
+    assert result == []

@@ -21,5 +21,11 @@ def test_dockerfile_runs_flask_app():
 
 def test_env_example_documents_required_configuration():
     text = (ROOT / ".env.example").read_text()
-    for key in ("FLASK_SECRET_KEY", "TASKS_SPREADSHEET_ID", "GOOGLE_CLIENT_ID", "FIREBASE_PROJECT_ID"):
+    for key in (
+        "FLASK_SECRET_KEY",
+        "TASKS_SPREADSHEET_ID",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_OAUTH_REDIRECT_URI",
+        "FIREBASE_PROJECT_ID",
+    ):
         assert key in text
