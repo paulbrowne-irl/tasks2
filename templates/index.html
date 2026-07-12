@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Management</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">TASK MANAGEMENT</p>
+      <h1>Tasks, content and links</h1>
+      <p>Signed in as {{ identity.email or identity.uid }}.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="actions-title">
+      <h2 id="actions-title">Task actions</h2>
+      <form id="task-form" class="task-form">
+        <label for="category">Category</label>
+        <input id="category" name="category" required autocomplete="off">
+        <label for="task-name">Task name</label>
+        <input id="task-name" name="task_name" required autocomplete="off">
+        <button type="submit">Add task</button>
+      </form>
+      <div class="actions" aria-label="Task organisation actions">
+        <button id="refresh-tasks" type="button">Refresh tasks</button>
+        <button id="sort-colour" type="button">Sort by colour</button>
+        <button id="triage-sheets" type="button">Triage task sheets</button>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="tasks-title">
+      <h2 id="tasks-title">Tasks</h2>
+      <div id="task-list" class="task-list" aria-live="polite">
+        <p>Refresh tasks to load the current spreadsheet data.</p>
+      </div>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

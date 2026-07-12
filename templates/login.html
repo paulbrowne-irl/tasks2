@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in | Task Management</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="shell login-shell">
+    <section class="panel" aria-labelledby="login-title">
+      <p class="eyebrow">TASK MANAGEMENT</p>
+      <h1 id="login-title">Sign in to continue</h1>
+      <p>Use your Google account to access the task spreadsheet.</p>
+      <button id="google-sign-in" type="button">Sign in with Google</button>
+      <p id="login-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    const config = {{ firebase_config | tojson }};
+    const status = document.querySelector("#login-status");
+    document.querySelector("#google-sign-in").addEventListener("click", async () => {
+      status.textContent = "Signing in…";
+      try {
+        const auth = getAuth(initializeApp(config));
+        const result = await signInWithPopup(auth, new GoogleAuthProvider());
+        const token = await result.user.getIdToken();
+        sessionStorage.setItem("firebase_id_token", token);
+        const response = await fetch("/api/auth/session", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error("The application could not establish a session.");
+        window.location.href = "/auth/google/start";
+      } catch (error) {
+        status.textContent = error.message || "Sign-in failed.";
+      }
+    });
+  </script>
+</body>
+</html>

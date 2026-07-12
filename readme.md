@@ -19,8 +19,9 @@ Users can:
 - Python
 - Flask
 - Responsive HTML, CSS, and browser JavaScript
-- Google Firebase hosting
+- Google Firebase Hosting fronting the Flask service on Cloud Run
 - Firebase Authentication with Google-account sign-in
+- Google OAuth consent for per-user Google Sheets access
 - Google Sheets API for all persistent task data
 
 No separate application database is used. Task data and task metadata remain in Google Sheets.
@@ -47,7 +48,7 @@ The Flask web application provides a responsive interface for mobile and desktop
 - Status or output messages for completed actions
 
 ## Authentication
-Users must sign in with their Google account through Firebase Authentication before accessing task data.
+Users must sign in with their Google account through Firebase Authentication before accessing task data. They must also grant the application Google Sheets access through OAuth consent. The Sheets authorization is used on behalf of the signed-in user; no service-account credentials or user passwords are stored.
 
 No security credentiatals (other than tokens to confirm successful login) should be stored
 
@@ -55,21 +56,22 @@ No security credentiatals (other than tokens to confirm successful login) should
 
 1. Install the Python dependencies from `requirements.txt`.
 2. Configure Firebase Authentication with Google sign-in enabled.
-3. Configure the Google Sheets API and the target spreadsheet.
-4. Set the required Firebase, Google API, and spreadsheet configuration values.
-5. Start the Flask application using the project’s configured application entry point.
-6. Open the application in a browser and sign in with Google.
+3. Configure a Google OAuth web client and consent screen with the Sheets scope required by the application.
+4. Enable the Google Sheets API and configure the target spreadsheet.
+5. Set the required Firebase, Google OAuth, and spreadsheet configuration values from `.env.example`.
+6. Start the Flask application using the project’s configured application entry point.
+7. Open the application in a browser, sign in with Google, and grant Sheets access.
 
 The deployed application must use HTTPS and must not store persistent task data outside Google Sheets.
 
 ## Deployment
 
-Deploy the Flask application using Google Firebase. The deployment configuration must provide:
+Deploy the Flask application to Cloud Run and connect it to Firebase Hosting using the rewrite in `firebase.json`. The deployment configuration must provide:
 
-- Flask application hosting
+- Flask application hosting through Cloud Run
 - Firebase Authentication
 - Google Sheets API access
-- Secure configuration for Google and Firebase credentials
+- Secure configuration for OAuth client values, Firebase verification, and Flask session secrets
 - A responsive browser-accessible web URL
 
 ## Testing
