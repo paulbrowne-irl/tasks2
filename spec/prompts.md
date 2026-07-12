@@ -1,6 +1,6 @@
 *Basic Prompts - Core project*
 
-Please implement the specification in spec1.md
+Please implement the specification in spec.md
 
 Follow the requirements exactly as specified.
 
@@ -18,7 +18,7 @@ Generate a new specification based on the specification in spec2-gui.md and spec
 
 
 *To examine what the project has done i.e. code inspection by non technical business experts*
-Operate in view only mode, and only use the contents of the triage.drl file in the project. Extract the rules that apply to a 2 year old child with a runny nose and a temperature of 38 degrees Celsius. Output as a list of rules, starting with the line number where each rule starts in the triage.drl file.
+Operate in view only mode, and only use the application's configured clinical decision logic. Determine the outcome for a 2 year old child with a runny nose and a temperature of 38 degrees Celsius. Output the relevant decision factors as a list.
 
 *Review and suggest improvements*
 Suggest improvements to the spec1.md file to implement current best technical practices and frameworks. Suggest improvements for clarity for business readers.
