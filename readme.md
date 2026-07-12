@@ -124,4 +124,13 @@ The project is organised around these responsibilities:
 - Tests verify task operations, spreadsheet integration, authentication, and responsive UI behavior.
 
 ## setup instructions
-Full setup instructions should be provided in the Readme.md
+1. Install the Firebase CLI: `npm install -g firebase-tools`
+2. Sign in to Firebase: `firebase login`
+3. Initialize Firebase Hosting in this project: `firebase init hosting`
+   - Choose an existing Firebase project or create a new one.
+   - Select the default `public` directory or keep the configured `public` path.
+   - Configure rewrites to route all traffic to the Cloud Run service.
+4. Verify the `firebase.json` rewrite section points to the Cloud Run service.
+5. Deploy the project: `firebase deploy`
+6. Open the deployed Firebase Hosting URL in a browser.
+7. Sign in with Google and grant the app access to the configured Google Sheets spreadsheet.
