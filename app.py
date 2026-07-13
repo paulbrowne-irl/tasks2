@@ -27,9 +27,11 @@ def create_app(
     app.extensions["sheets_service"] = sheets_service
 
     def current_identity() -> Identity:
-        # Extract and verify the Firebase bearer token from the current request.
-        authorization = request.headers.get("Authorization")
-        return app.extensions["auth_manager"].authenticate_header(authorization)
+        # Read the established identity from the signed Flask session.
+        uid = session.get("user_uid")
+        if not uid:
+            raise AuthenticationError("Authentication required")
+        return Identity(uid=uid, email=session.get("user_email"))
 
     def current_sheets_service(identity: Identity) -> SheetsService | Any:
         # Select an injected test service or construct a user-authorized Sheets service.
@@ -62,16 +64,8 @@ def create_app(
 
     @app.get("/login")
     def login() -> str:
-        # Render the Firebase Google sign-in page with public Firebase configuration.
-        return render_template(
-            "login.html",
-            firebase_config={
-                "apiKey": getattr(settings, "firebase_api_key", None),
-                "authDomain": getattr(settings, "firebase_auth_domain", None),
-                "projectId": getattr(settings, "firebase_project_id", None),
-                "appId": getattr(settings, "firebase_app_id", None),
-            },
-        )
+        # Render the page that begins the server-side Google OAuth flow.
+        return render_template("login.html")
 
     @app.get("/")
     @protected
@@ -127,36 +121,28 @@ def create_app(
 
     @app.get("/auth/google/start")
     def google_start() -> Any:
-        # Start the Google OAuth consent flow after Firebase identity is established.
-        uid = session.get("firebase_uid")
-        if not uid:
-            return jsonify(error="Authenticate with Firebase before granting Sheets access"), 401
+        # Start Google OAuth to establish identity and authorize Sheets access.
         url, state = app.extensions["auth_manager"].google_authorization_url()
         session["google_oauth_state"] = state
         return redirect(url)
 
-    @app.post("/api/auth/session")
-    @protected
-    def establish_session(identity: Identity) -> Any:
-        # Bind the verified Firebase identity to the Flask session.
-        session["firebase_uid"] = identity.uid
-        session["firebase_email"] = identity.email
-        return jsonify(message="Identity established", google_authorization=url_for("google_start"))
-
     @app.get("/auth/google/callback")
     def google_callback() -> Any:
-        # Validate the OAuth callback and store the user's Sheets credentials.
+        # Validate the OAuth callback, establish a Flask session, and store credentials.
         if request.args.get("error"):
             return jsonify(error="Google authorization was not completed"), 400
-        uid = session.get("firebase_uid")
         state = session.get("google_oauth_state")
-        if not uid or not state or state != request.args.get("state"):
+        if not state or state != request.args.get("state"):
             return jsonify(error="Invalid Google authorization state"), 400
         try:
             credentials = app.extensions["auth_manager"].exchange_google_code(request.args["code"])
-            app.extensions["auth_manager"].save_google_credentials(uid, credentials)
-        except Exception:
+            identity = app.extensions["auth_manager"].identity_for_credentials(credentials)
+            app.extensions["auth_manager"].save_google_credentials(identity.uid, credentials)
+        except (AuthenticationError, KeyError, ValueError):
             return jsonify(error="Google Sheets authorization could not be completed"), 502
+        session["user_uid"] = identity.uid
+        session["user_email"] = identity.email
+        session.pop("google_oauth_state", None)
         return redirect(url_for("index"))
 
     return app

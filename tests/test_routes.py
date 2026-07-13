@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import pytest
 
 from app import create_app
-from auth import AuthenticationError, Identity
+from auth import Identity
 
 
 @dataclass
@@ -26,9 +26,8 @@ def services():
 
 
 def test_unauthenticated_task_api_is_rejected(services):
-    # Requests without a verified identity must receive a 401 response.
+    # Requests without a Flask session must receive a 401 response.
     auth, sheets = services
-    auth.authenticate_header.side_effect = AuthenticationError("Bearer token is required")
     client = create_app(FakeSettings(), auth, sheets).test_client()
 
     response = client.get("/api/tasks")
@@ -37,13 +36,20 @@ def test_unauthenticated_task_api_is_rejected(services):
     assert response.json["error"] == "Authentication required"
 
 
-def test_authenticated_task_api_returns_rows(services):
-    # Authenticated callers can retrieve spreadsheet-backed task rows.
-    auth, sheets = services
-    auth.authenticate_header.return_value = Identity("user-1", "user@example.com")
-    client = create_app(FakeSettings(), auth, sheets).test_client()
+def authenticated_client(app):
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session["user_uid"] = "user-1"
+        session["user_email"] = "user@example.com"
+    return client
 
-    response = client.get("/api/tasks", headers={"Authorization": "Bearer token"})
+
+def test_authenticated_task_api_returns_rows(services):
+    # A Flask session can retrieve spreadsheet-backed task rows.
+    auth, sheets = services
+    client = authenticated_client(create_app(FakeSettings(), auth, sheets))
+
+    response = client.get("/api/tasks")
 
     assert response.status_code == 200
     assert response.json["tasks"][0]["task_name"] == "Call"
@@ -52,13 +58,11 @@ def test_authenticated_task_api_returns_rows(services):
 def test_add_task_validates_and_delegates(services):
     # Valid task input is delegated to the Sheets service and returns 201.
     auth, sheets = services
-    auth.authenticate_header.return_value = Identity("user-1")
-    client = create_app(FakeSettings(), auth, sheets).test_client()
+    client = authenticated_client(create_app(FakeSettings(), auth, sheets))
 
     response = client.post(
         "/api/tasks",
         json={"category": "Work", "task_name": "Call customer"},
-        headers={"Authorization": "Bearer token"},
     )
 
     assert response.status_code == 201
@@ -68,13 +72,11 @@ def test_add_task_validates_and_delegates(services):
 def test_add_task_rejects_empty_values(services):
     # Empty category or task names are rejected before any spreadsheet write.
     auth, sheets = services
-    auth.authenticate_header.return_value = Identity("user-1")
-    client = create_app(FakeSettings(), auth, sheets).test_client()
+    client = authenticated_client(create_app(FakeSettings(), auth, sheets))
 
     response = client.post(
         "/api/tasks",
         json={"category": "", "task_name": "Call customer"},
-        headers={"Authorization": "Bearer token"},
     )
 
     assert response.status_code == 400
@@ -84,11 +86,10 @@ def test_add_task_rejects_empty_values(services):
 def test_sort_and_triage_routes_delegate(services):
     # Organisation actions delegate to the matching Sheets service methods.
     auth, sheets = services
-    auth.authenticate_header.return_value = Identity("user-1")
-    client = create_app(FakeSettings(), auth, sheets).test_client()
+    client = authenticated_client(create_app(FakeSettings(), auth, sheets))
 
-    sort_response = client.post("/api/tasks/sort", headers={"Authorization": "Bearer token"})
-    triage_response = client.post("/api/task-sheets/triage", headers={"Authorization": "Bearer token"})
+    sort_response = client.post("/api/tasks/sort")
+    triage_response = client.post("/api/task-sheets/triage")
 
     assert sort_response.status_code == 200
     assert triage_response.status_code == 200

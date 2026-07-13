@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from unittest.mock import Mock
 
 from app import create_app
-from auth import Identity
 
 
 @dataclass
@@ -16,10 +15,12 @@ class FakeSettings:
 
 def test_task_page_has_accessible_responsive_controls():
     # The page must expose labelled, keyboard-usable task controls.
-    auth = Mock()
-    auth.authenticate_header.return_value = Identity("user-1", "user@example.com")
-    app = create_app(FakeSettings(), auth, Mock())
-    response = app.test_client().get("/", headers={"Authorization": "Bearer token"})
+    app = create_app(FakeSettings(), Mock(), Mock())
+    client = app.test_client()
+    with client.session_transaction() as session:
+        session["user_uid"] = "user-1"
+        session["user_email"] = "user@example.com"
+    response = client.get("/")
 
     body = response.get_data(as_text=True)
     assert response.status_code == 200
@@ -34,9 +35,7 @@ def test_task_page_has_accessible_responsive_controls():
 
 def test_static_styles_include_mobile_breakpoint():
     # The stylesheet must include a narrow-screen layout breakpoint.
-    auth = Mock()
-    auth.authenticate_header.return_value = Identity("user-1")
-    app = create_app(FakeSettings(), auth, Mock())
+    app = create_app(FakeSettings(), Mock(), Mock())
     response = app.test_client().get("/static/styles.css")
 
     assert response.status_code == 200

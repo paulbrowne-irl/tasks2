@@ -114,8 +114,8 @@ i.  **Data Model**:
 
 3.  **Web Framework and Hosting**:
     - Use Flask to provide the web application and HTTP API.
-    - Host the Flask application on Google Firebase.
-    - Authenticate users through their Google account using Firebase Authentication.
+    - Run the application as a standard Python WSGI service, using a production WSGI server in deployed environments.
+    - Use Flask sessions and Google OAuth where authenticated access to Google Sheets is required.
     - The deployment must support the responsive task web interface, Google Spreadsheet access, task creation, sorting, and task-sheet triage.
 
 6.  **Testing**:
@@ -177,13 +177,12 @@ i.  **Data Model**:
 **Dependencies:**
 - Flask and a production WSGI server.
 - Google Sheets API client for reading and writing spreadsheet data.
-- Firebase Authentication integration for Google-account sign-in.
 
-**Environment:** Responsive web browser application hosted on Google Firebase.
+**Environment:** Responsive web browser application served by Flask.
 **Responsive Design:** The web interface must adapt for mobile and desktop browsers.
 **Accessibility:** The interface must provide basic accessibility, including labelled inputs, readable contrast, and keyboard-usable controls.
 **Logging:** Python-compatible application logging.
-**Authentication:** Firebase Authentication using Google account sign-in.
+**Authentication:** Flask session authentication, with Google OAuth used only to authorize access to Google Sheets.
 **Data Storage:** All persistent task data must be stored in Google Sheets. No separate application database may be used.
 **External Integration:** Google Sheets API for all task and task-metadata storage operations.
 
@@ -203,7 +202,7 @@ The web UI must be responsive and usable on mobile and desktop browsers.
 
 The web UI must provide basic accessibility through labelled inputs, readable contrast, and keyboard-usable controls.
 
-The application should require users to authenticate with Firebase Authentication using their Google account before accessing task data. All stored task data must remain in Google Sheets.
+The application should require authenticated access before exposing task data. Google OAuth may be used to authorize Google Sheets access. All stored task data must remain in Google Sheets.
 
 The GUI should have the following features:
 * A task list or task information display
@@ -213,11 +212,11 @@ The GUI should have the following features:
 * A control to run task-sheet triage
 * Status or output information for completed actions
 
-Update all necessary source code to implement the responsive Flask web UI, including the Python project configuration, HTML templates, JavaScript, Readme.md, Firebase deployment configuration, and tests where applicable.
+Update all necessary source code to implement the responsive Flask web UI, including the Python project configuration, HTML templates, JavaScript, `readme.md`, WSGI deployment configuration, and tests where applicable.
 
 Task operations must preserve the configured spreadsheet structure, including the `Tasks` sheet, category data, `z done` marker, `T Date` field, and supporting task metadata.
 
-Ensure the `readme.md` contains clear instructions for deployment from GitHub to Google Firebase and for running the project for the first time.
+Ensure the `readme.md` contains clear instructions for running and deploying the Flask application for the first time.
 
 If the `Tasks` spreadsheet does not exist, create it in the user's Google Sheets account.
 

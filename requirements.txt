@@ -2,7 +2,6 @@ Flask>=3.1,<4
 google-api-python-client>=2.170,<3
 google-auth>=2.40,<3
 google-auth-oauthlib>=1.2,<2
-firebase-admin>=6.8,<7
 python-dotenv>=1.1,<2
 gunicorn>=23,<24
 pytest>=8,<10

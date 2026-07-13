@@ -21,9 +21,9 @@ label { font-weight: 650; }
 /* Standardise text input sizing and borders. */
 input { width: 100%; min-height: 2.7rem; border: 1px solid #bcc3d0; border-radius: .5rem; padding: .6rem; font: inherit; }
 /* Shared visual treatment for all interactive buttons. */
-button { min-height: 2.7rem; border: 0; border-radius: .5rem; padding: .6rem 1rem; background: #5367d8; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+button, .button { display: inline-block; min-height: 2.7rem; border: 0; border-radius: .5rem; padding: .6rem 1rem; background: #5367d8; color: white; font: inherit; font-weight: 700; cursor: pointer; text-decoration: none; }
 /* Provide visual feedback for pointer and keyboard interaction. */
-button:hover, button:focus-visible { background: #3f51bd; }
+button:hover, button:focus-visible, .button:hover, .button:focus-visible { background: #3f51bd; }
 /* Allow action buttons to wrap when the viewport narrows. */
 .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; }
 /* Reserve space so status updates do not shift the layout. */

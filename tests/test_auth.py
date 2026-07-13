@@ -1,37 +1,22 @@
-"""Unit tests for Firebase token verification and Google OAuth setup."""
+"""Unit tests for Google OAuth setup and identity handling."""
 
 from unittest.mock import Mock
 
-import pytest
-
-from auth import AuthManager, AuthenticationError
+from auth import AuthManager, Identity
 
 
-def test_missing_bearer_token_is_rejected():
-    # Missing authorization headers must never reach protected application logic.
-    manager = AuthManager(firebase_verifier=Mock())
+def test_google_credentials_produce_an_identity():
+    credentials = Mock()
+    expected = Identity("user-1", "user@example.com")
+    manager = AuthManager(identity_factory=lambda value: expected)
 
-    with pytest.raises(AuthenticationError, match="Bearer token"):
-        manager.authenticate_header(None)
-
-
-def test_firebase_token_is_verified_and_identity_returned():
-    # A verified Firebase claim set becomes the application's user identity.
-    verifier = Mock(return_value={"uid": "user-1", "email": "user@example.com"})
-    manager = AuthManager(firebase_verifier=verifier)
-
-    identity = manager.authenticate_header("Bearer id-token")
-
-    verifier.assert_called_once_with("id-token")
-    assert identity.uid == "user-1"
-    assert identity.email == "user@example.com"
+    assert manager.identity_for_credentials(credentials) == expected
 
 
 def test_oauth_authorization_url_uses_sheets_scope():
-    # OAuth setup must return the provider URL and CSRF state value.
     flow = Mock()
     flow.authorization_url.return_value = ("https://accounts.google.test/consent", "state-1")
-    manager = AuthManager(firebase_verifier=Mock(), oauth_flow_factory=lambda: flow)
+    manager = AuthManager(oauth_flow_factory=lambda: flow)
 
     url, state = manager.google_authorization_url()
 

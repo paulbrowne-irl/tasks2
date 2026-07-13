@@ -30,10 +30,8 @@ function escapeHtml(value) {
 }
 
 async function request(path, options = {}) {
-  // Send an authenticated JSON request using the Firebase ID token in session storage.
+  // Send a JSON request authenticated by the browser's Flask session cookie.
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-  const token = sessionStorage.getItem("firebase_id_token");
-  if (token) headers.Authorization = `Bearer ${token}`;
   const response = await fetch(path, { ...options, headers });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.error || "The request failed");

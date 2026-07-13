@@ -19,11 +19,6 @@ class Settings:
     google_client_id: str | None = None
     google_client_secret: str | None = None
     google_oauth_redirect_uri: str | None = None
-    firebase_project_id: str | None = None
-    firebase_api_key: str | None = None
-    firebase_auth_domain: str | None = None
-    firebase_app_id: str | None = None
-    firebase_service_account_json: str | None = None
     google_scopes: tuple[str, ...] = (
         "https://www.googleapis.com/auth/spreadsheets",
     )
@@ -45,9 +40,4 @@ def load_settings() -> Settings:
         google_client_id=os.getenv("GOOGLE_CLIENT_ID"),
         google_client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
         google_oauth_redirect_uri=os.getenv("GOOGLE_OAUTH_REDIRECT_URI"),
-        firebase_project_id=os.getenv("FIREBASE_PROJECT_ID"),
-        firebase_api_key=os.getenv("FIREBASE_API_KEY"),
-        firebase_auth_domain=os.getenv("FIREBASE_AUTH_DOMAIN"),
-        firebase_app_id=os.getenv("FIREBASE_APP_ID"),
-        firebase_service_account_json=os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON"),
     )

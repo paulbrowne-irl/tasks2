@@ -14,32 +14,8 @@
       <p class="eyebrow">TASK MANAGEMENT</p>
       <h1 id="login-title">Sign in to continue</h1>
       <p>Use your Google account to access the task spreadsheet.</p>
-      <button id="google-sign-in" type="button">Sign in with Google</button>
-      <p id="login-status" class="status" role="status" aria-live="polite"></p>
+      <a class="button" href="{{ url_for('google_start') }}">Sign in with Google</a>
     </section>
   </main>
-  <!-- Firebase client sign-in exchanges a Google identity for a backend ID token. -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-
-    const config = {{ firebase_config | tojson }};
-    const status = document.querySelector("#login-status");
-    // Authenticate with Google, establish the Flask session, and request Sheets consent.
-    document.querySelector("#google-sign-in").addEventListener("click", async () => {
-      status.textContent = "Signing in…";
-      try {
-        const auth = getAuth(initializeApp(config));
-        const result = await signInWithPopup(auth, new GoogleAuthProvider());
-        const token = await result.user.getIdToken();
-        sessionStorage.setItem("firebase_id_token", token);
-        const response = await fetch("/api/auth/session", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
-        if (!response.ok) throw new Error("The application could not establish a session.");
-        window.location.href = "/auth/google/start";
-      } catch (error) {
-        status.textContent = error.message || "Sign-in failed.";
-      }
-    });
-  </script>
 </body>
 </html>
