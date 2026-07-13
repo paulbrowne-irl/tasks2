@@ -1,8 +1,10 @@
 .env
 .venv/
+.agents/
 venv/
 __pycache__/
 .pytest_cache/
 *.pyc
 firebase-debug.log
 .firebaserc
+.firebase/hosting.cHVibGlj.cache

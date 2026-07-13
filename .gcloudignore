@@ -1,0 +1,18 @@
+.gcloudignore
+.git
+.github
+.agents
+.codex
+.env
+.venv
+venv
+__pycache__
+.pytest_cache
+*.pyc
+docs
+spec
+tests
+public
+firebase.json
+firebase copy.json
+apphosting.yaml

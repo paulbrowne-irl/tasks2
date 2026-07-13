@@ -1,4 +1,4 @@
-"""Tests for Firebase, container, and environment configuration files."""
+"""Tests for Cloud Run, container, and environment configuration files."""
 
 import json
 from pathlib import Path
@@ -7,20 +7,21 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 
 
-def test_firebase_rewrites_to_flask_cloud_run_service():
-    # Firebase Hosting must route requests to the deployed Flask service.
+def test_firebase_hosting_rewrites_to_flask_cloud_run_service_without_app_hosting():
+    # Optional Firebase Hosting must route requests to the deployed Flask service.
     config = json.loads((ROOT / "firebase.json").read_text())
     rewrite = config["hosting"]["rewrites"][0]
     assert rewrite["run"]["serviceId"] == "task-management"
     assert rewrite["run"]["pinTag"] is True
+    assert "apphosting" not in config
 
 
 def test_dockerfile_runs_flask_app():
-    # The container must start the Flask application through Gunicorn's factory mode.
+    # The container must invoke the Flask application factory through Gunicorn.
     dockerfile = (ROOT / "Dockerfile").read_text()
     assert "python:3.12-slim" in dockerfile
-    assert '"--factory"' in dockerfile
-    assert '"app:create_app"' in dockerfile
+    assert "app:create_app()" in dockerfile
+    assert "${PORT:-8080}" in dockerfile
 
 
 def test_env_example_documents_required_configuration():

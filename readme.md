@@ -1,6 +1,6 @@
 # Task Management System
 
-A responsive Python web application for managing tasks stored in Google Sheets. The application uses Flask for the web interface and is hosted on Google Firebase.
+A responsive Python web application for managing tasks stored in Google Sheets. The application uses Flask for the web interface and is deployed to Google Cloud Run.
 
 ## What it does
 
@@ -19,7 +19,7 @@ Users can:
 - Python
 - Flask
 - Responsive HTML, CSS, and browser JavaScript
-- Google Firebase Hosting fronting the Flask service on Cloud Run
+- Google Cloud Run for the Flask service
 - Firebase Authentication with Google-account sign-in
 - Google OAuth consent for per-user Google Sheets access
 - Google Sheets API for all persistent task data
@@ -88,7 +88,7 @@ No security credentiatals (other than tokens to confirm successful login) should
 | `FIREBASE_APP_ID` | The `appId` field in the Firebase Web app SDK configuration. |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Optional. Cloud Run normally uses its attached service account through Application Default Credentials, so leave this blank unless your deployment setup explicitly requires a service-account credential. Never commit a service-account JSON key. |
 
-For Cloud Run, store `FLASK_SECRET_KEY`, `GOOGLE_CLIENT_SECRET`, and any optional service-account material in Secret Manager and expose them as environment variables. The public Firebase configuration values may be regular environment variables.
+For Cloud Run, store `FLASK_SECRET_KEY` and `GOOGLE_CLIENT_SECRET` in Secret Manager and expose them as environment variables. The public Firebase configuration values may be regular environment variables.
 
 ## Local development
 
@@ -105,94 +105,92 @@ The deployed application must use HTTPS and must not store persistent task data 
 
 ## Deployment
 
-This project serves the Flask application from Cloud Run and sends requests to it through Firebase Hosting. The checked-in `firebase.json` expects a Cloud Run service named `task-management` in `europe-west1`.
+Deploy the Flask application directly to Cloud Run. Firebase remains in use for browser sign-in, but Firebase App Hosting and `firebase deploy` are not used to build or run this Python application.
 
 ### Before you begin
 
-1. Complete the [Setup](#setup) section, including Firebase Authentication, the OAuth client, and the Google APIs.
-2. In Google Cloud Console, attach a billing account to the Firebase project. Cloud Run requires billing to be enabled, even if usage remains within free allowances.
-3. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) and Firebase CLI. The Firebase CLI requires a supported Node.js installation.
+1. Complete the [Setup](#setup) section, including the Firebase web app, Google sign-in, OAuth client, Google Sheets API, and Google Drive API.
+2. Attach a billing account to the Google Cloud project. Cloud Run requires billing to be enabled, even when usage is within free allowances.
+3. Install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install), then sign in and choose the Firebase project's Google Cloud project:
 
    ```bash
-   npm install -g firebase-tools
    gcloud auth login
-   firebase login
-   ```
-
-4. Set the active project, replacing `YOUR_PROJECT_ID` with the Firebase **Project ID** (not its display name):
-
-   ```bash
    gcloud config set project YOUR_PROJECT_ID
-   firebase use --add
    ```
 
-   When `firebase use --add` asks for an alias, use `default`. Alternatively, copy `.firebaserc.example` to `.firebaserc` and replace its placeholder project ID. Do not run `firebase init hosting` in this repository: it can overwrite the existing rewrite configuration in `firebase.json`.
-
-5. Enable the Cloud Run, Cloud Build, Artifact Registry, Secret Manager, Sheets, and Drive APIs:
+4. Enable the required services:
 
    ```bash
    gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com sheets.googleapis.com drive.googleapis.com
    ```
 
-### Configure the deployed application
+### Create secrets and the runtime identity
 
-1. Add both of these URLs to the authorised redirect URIs of the Google OAuth web client created during setup. Replace `YOUR_PROJECT_ID` with the actual Firebase project ID:
+Use Secret Manager for private values. Do not commit `.env` or paste real secrets into deployment scripts.
 
-   - `https://YOUR_PROJECT_ID.web.app/auth/google/callback`
-   - `https://YOUR_PROJECT_ID.firebaseapp.com/auth/google/callback`
+```bash
+printf '%s' 'YOUR_FLASK_SECRET_KEY' | gcloud secrets create flask-secret-key --data-file=-
+printf '%s' 'YOUR_GOOGLE_CLIENT_SECRET' | gcloud secrets create google-oauth-client-secret --data-file=-
+gcloud iam service-accounts create task-management-runtime --display-name="Task Management Cloud Run runtime"
+gcloud secrets add-iam-policy-binding flask-secret-key --member="serviceAccount:task-management-runtime@YOUR_PROJECT_ID.iam.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
+gcloud secrets add-iam-policy-binding google-oauth-client-secret --member="serviceAccount:task-management-runtime@YOUR_PROJECT_ID.iam.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member="serviceAccount:task-management-runtime@YOUR_PROJECT_ID.iam.gserviceaccount.com" --role="roles/firebaseauth.admin"
+```
 
-   Set `GOOGLE_OAUTH_REDIRECT_URI` to the `.web.app` URL below. Add a matching URL for a custom domain before switching to it.
-2. Store the private values in Secret Manager. Use a password manager or terminal prompt to supply the real values; do not paste secrets into a committed file.
+If a secret already exists, add a version instead: `printf '%s' 'VALUE' | gcloud secrets versions add SECRET_NAME --data-file=-`.
 
-   ```bash
-   printf '%s' 'YOUR_FLASK_SECRET_KEY' | gcloud secrets create flask-secret-key --data-file=-
-   printf '%s' 'YOUR_GOOGLE_CLIENT_SECRET' | gcloud secrets create google-oauth-client-secret --data-file=-
-   ```
+The runtime service account uses Application Default Credentials to verify Firebase ID tokens. The `firebaseauth.admin` role is a straightforward first-time setup choice; review and narrow it later if your organisation has a more restrictive Firebase IAM policy.
 
-   If a secret already exists, add a version instead: `printf '%s' 'VALUE' | gcloud secrets versions add SECRET_NAME --data-file=-`.
-3. Create a dedicated runtime service account and grant it access before deploying:
+### First deployment
 
-   ```bash
-   gcloud iam service-accounts create task-management-runtime --display-name="Task Management Cloud Run runtime"
-   gcloud secrets add-iam-policy-binding flask-secret-key --member="serviceAccount:task-management-runtime@YOUR_PROJECT_ID.iam.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
-   gcloud secrets add-iam-policy-binding google-oauth-client-secret --member="serviceAccount:task-management-runtime@YOUR_PROJECT_ID.iam.gserviceaccount.com" --role="roles/secretmanager.secretAccessor"
-   gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member="serviceAccount:task-management-runtime@YOUR_PROJECT_ID.iam.gserviceaccount.com" --role="roles/firebaseauth.admin"
-   ```
+The repository includes a `Dockerfile` that installs `requirements.txt` and starts the Flask factory with `gunicorn 'app:create_app()'`. This removes the need for `GOOGLE_ENTRYPOINT`, `app.yaml`, or a `Procfile`.
 
-   The final role lets the application verify Firebase ID tokens. Review and narrow it later if your organisation has a more restrictive Firebase IAM policy.
-
-### Deploy Cloud Run
-
-From the repository root, run the following. It builds from `requirements.txt`, starts this app's Flask factory with Gunicorn, and exposes the service publicly so Firebase Hosting can reach it.
+From the repository root, deploy the service. Replace each `YOUR_...` value before running the command.
 
 ```bash
 gcloud run deploy task-management \
   --source . \
   --region europe-west1 \
   --allow-unauthenticated \
-  --port 8080 \
   --service-account "task-management-runtime@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
-  --command gunicorn \
-  --args "--bind=0.0.0.0:8080,--workers=1,--factory,app:create_app" \
   --set-secrets "FLASK_SECRET_KEY=flask-secret-key:latest,GOOGLE_CLIENT_SECRET=google-oauth-client-secret:latest" \
-  --set-env-vars "TASKS_SPREADSHEET_ID=YOUR_SPREADSHEET_ID,TASKS_SHEET_NAME=Tasks,GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID,GOOGLE_OAUTH_REDIRECT_URI=https://YOUR_PROJECT_ID.web.app/auth/google/callback,FIREBASE_PROJECT_ID=YOUR_PROJECT_ID,FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY,FIREBASE_AUTH_DOMAIN=YOUR_PROJECT_ID.firebaseapp.com,FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID"
+  --set-env-vars "TASKS_SPREADSHEET_ID=YOUR_SPREADSHEET_ID,TASKS_SHEET_NAME=Tasks,GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID,FIREBASE_PROJECT_ID=YOUR_PROJECT_ID,FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY,FIREBASE_AUTH_DOMAIN=YOUR_PROJECT_ID.firebaseapp.com,FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID"
 ```
 
-Replace every `YOUR_...` value before running it. Keep the service name and region exactly as shown unless you also update `firebase.json` to match. Visit the Cloud Run URL printed by the command and confirm that `/health` returns `ok`.
+Cloud Run prints the service URL on success. Save it, then verify the health endpoint:
 
-### Deploy Firebase Hosting and verify
+```bash
+curl https://YOUR_CLOUD_RUN_HOSTNAME/health
+```
 
-1. Deploy only Hosting, which preserves the Cloud Run service and publishes the rewrite:
+The response must be `ok`.
 
-   ```bash
-   firebase deploy --only hosting
+### Finish authentication setup
+
+Cloud Run assigns a stable service URL such as `https://task-management-HASH.europe-west1.run.app`. Use the exact hostname returned by the first deployment.
+
+1. In Firebase Authentication, add the Cloud Run hostname (without `https://` or a path) to **Authorized domains**.
+2. In the Google OAuth client's **Authorized redirect URIs**, add:
+
+   ```text
+   https://YOUR_CLOUD_RUN_HOSTNAME/auth/google/callback
    ```
 
-2. Open `https://YOUR_PROJECT_ID.web.app/health`. It should return `ok` through the Hosting rewrite.
-3. Open `https://YOUR_PROJECT_ID.web.app/`, sign in with Google, and approve the Sheets permission. Confirm that adding a task updates the configured spreadsheet.
-4. If sign-in reports an unauthorised domain or redirect URI, return to Firebase Authentication and the Google OAuth client and add the exact domain/URI shown in the error. Changes may take a few minutes to propagate.
+3. Set that same complete URL in Cloud Run and deploy a new revision:
 
-For later releases, redeploy Cloud Run with the same `gcloud run deploy` command and then run `firebase deploy --only hosting`. Because `pinTag` is enabled in `firebase.json`, each Hosting deploy is pinned to the current Cloud Run revision. For GitHub automation, use a service account with the equivalent Cloud Run, Artifact Registry, Secret Manager, and Firebase Hosting permissions; never commit `.env`, `.firebaserc` with credentials, or secret values.
+   ```bash
+   gcloud run services update task-management \
+     --region europe-west1 \
+     --update-env-vars "GOOGLE_OAUTH_REDIRECT_URI=https://YOUR_CLOUD_RUN_HOSTNAME/auth/google/callback"
+   ```
+
+Open the Cloud Run service URL, sign in with Google, grant Sheets access, and add a test task. If authentication reports an unauthorised domain or redirect URI, compare the error with the exact hostname and callback path configured above.
+
+### Later deployments
+
+Run the same `gcloud run deploy task-management --source .` command to build and release a new revision. Cloud Run keeps previous revisions available for rollback in the Google Cloud Console.
+
+`firebase.json` is retained only as an optional Firebase Hosting-to-Cloud-Run rewrite. Do not add an `apphosting` section or run `firebase deploy` to deploy this backend: Firebase App Hosting expects a Node.js framework build and is not the deployment target for this Flask service.
 
 ## Testing
 

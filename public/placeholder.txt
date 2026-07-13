@@ -1,0 +1,1 @@
+This directory is intentionally retained for the optional Firebase Hosting rewrite.
