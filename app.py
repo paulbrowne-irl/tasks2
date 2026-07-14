@@ -21,7 +21,7 @@ def create_app(
     # Build the Flask application, register dependencies, and expose all web routes.
     settings = settings or load_settings()
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = settings.flask_secret_key
+   
     app.config["SETTINGS"] = settings
     app.extensions["auth_manager"] = auth_manager or AuthManager()
     app.extensions["sheets_service"] = sheets_service
